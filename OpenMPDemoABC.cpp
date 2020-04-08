@@ -3,13 +3,11 @@
 #include <string>
 #include <omp.h>
 
-#define CHUNK 100
-
 using namespace std;
 
 /*
 compilado com:
-g++ -std=c++11 OpenMPDemoABC.cpp -fopenmp -pthread -o OpenMPDemoABC
+g++ -std=c++11 OpenMPDemoABC.cpp -fopenmp -o OpenMPDemoABC
 */
 
 class SharedArray {
@@ -23,24 +21,22 @@ public:
         array = new char[size];
         fill(array, array + size, '-');
     }
+
     ~SharedArray() {
         delete[] array;
-    }
-    void addChar(char c) {
-        array[index] = c;
-        spendSomeTime();
-        index++;
     }
 
     void addChar(char c, int pos) {
         if (pos >= 0 && pos < size) {
             array[pos] = c;
+            spendSomeTime();
         }
     }
 
     int countOccurrences(char c) {
         return count(array, array + size, c);
     }
+
     string toString() {
         return string(array, size);
     }
@@ -67,9 +63,8 @@ public:
     }
 
     void fillArrayConcurrently() {
-        int i;
-#pragma omp parallel for schedule(static, nTimes) shared(array) private(i) num_threads(nThreads)
-        for (i = 0; i < nThreads * nTimes; i++)
+#pragma omp parallel for schedule(static, nTimes) shared(array) num_threads(nThreads)
+        for (int i = 0; i < nThreads * nTimes; i++)
             array->addChar('A' + omp_get_thread_num(), i);
     }
 

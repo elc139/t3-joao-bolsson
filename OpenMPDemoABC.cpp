@@ -1,11 +1,11 @@
 #include <algorithm>
 #include <iostream>
 #include <string>
-#include <thread>
-#include <mutex>
 #include <omp.h>
 
 #define CHUNK 100
+
+using namespace std;
 
 /*
 compilado com:
@@ -17,31 +17,32 @@ private:
     char *array;
     int index;
     int size;
-    std::mutex mutex;
-    bool usemutex;
 
 public:
-    SharedArray(int n, bool use) : size(n), index(0), usemutex(use) {
+    SharedArray(int n) : size(n), index(0) {
         array = new char[size];
-        std::fill(array, array + size, '-');
+        fill(array, array + size, '-');
     }
     ~SharedArray() {
         delete[] array;
     }
     void addChar(char c) {
-        if (usemutex)
-            mutex.lock();
         array[index] = c;
         spendSomeTime();
         index++;
-        if (usemutex)
-            mutex.unlock();
     }
+
+    void addChar(char c, int pos) {
+        if (pos >= 0 && pos < size) {
+            array[pos] = c;
+        }
+    }
+
     int countOccurrences(char c) {
-        return std::count(array, array + size, c);
+        return count(array, array + size, c);
     }
-    std::string toString() {
-        return std::string(array, size);
+    string toString() {
+        return string(array, size);
     }
 
 private:
@@ -61,53 +62,35 @@ private:
     SharedArray *array;
 
 public:
-    ArrayFiller(bool usemutex) {
-        array = new SharedArray(nThreads * nTimes, usemutex);
+    ArrayFiller() {
+        array = new SharedArray(nThreads * nTimes);
     }
 
     void fillArrayConcurrently() {
-        int chunk = nTimes;
         int i;
-#pragma omp parallel for schedule(static) shared(array, chunk) private(i) num_threads(nThreads)
+#pragma omp parallel for schedule(static, nTimes) shared(array) private(i) num_threads(nThreads)
         for (i = 0; i < nThreads * nTimes; i++)
-            array->addChar('A' + omp_get_thread_num());
+            array->addChar('A' + omp_get_thread_num(), i);
     }
 
     void printStats() {
-        std::cout << array->toString() << std::endl;
+        cout << array->toString() << endl;
         for (int i = 0; i < nThreads; ++i)
-            std::cout << (char)('A' + i) << "="
-                      << array->countOccurrences('A' + i) << " ";
-        std::cout << std::endl;
+            cout << (char)('A' + i) << "="
+                 << array->countOccurrences('A' + i) << " ";
+        cout << endl;
     }
 
     ~ArrayFiller() {
         delete array;
     }
-
-private:
-    void run(char c) {
-        for (int i = 0; i < nTimes; i++) {
-            array->addChar(c);
-        }
-    }
 };
 
 int main() {
-    std::cout << "Each thread should add its char to the array n times (n=20)" << std::endl;
-    std::cout << "Correct results should total exactly nThreads*nTimes chars" << std::endl;
-    std::cout << "Case 1: no mutex, default scheduling (expecting wrong results)" << std::endl;
-    ArrayFiller m1(false);
+    cout << "Each thread should add its char to the array n times (n=20)" << endl;
+    cout << "Correct results should total exactly nThreads*nTimes chars" << endl;
+    cout << "Expecting correct results" << endl;
+    ArrayFiller m1;
     m1.fillArrayConcurrently();
     m1.printStats();
-
-    std::cout << "Case 2: same as case 1 (possibly getting different results due to scheduling)" << std::endl;
-    ArrayFiller m2(false);
-    m2.fillArrayConcurrently();
-    m2.printStats();
-
-    std::cout << "Case 3: using mutex (expecting correct results)" << std::endl;
-    ArrayFiller m3(true);
-    m3.fillArrayConcurrently();
-    m3.printStats();
 }

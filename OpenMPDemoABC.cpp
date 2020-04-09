@@ -62,8 +62,82 @@ public:
         array = new SharedArray(nThreads * nTimes);
     }
 
-    void fillArrayConcurrently() {
+    /**
+     * Static with chunk.
+     */
+    void fillStaticChunk() {
+        printf("\n\nCase: static with chunk\n");
 #pragma omp parallel for schedule(static, nTimes) shared(array) num_threads(nThreads)
+        for (int i = 0; i < nThreads * nTimes; i++)
+            array->addChar('A' + omp_get_thread_num(), i);
+    }
+
+    /**
+     * Static with chunk.
+     */
+    void fillStaticNoChunk() {
+        printf("\n\nCase: static without chunk\n");
+#pragma omp parallel for schedule(static) shared(array) num_threads(nThreads)
+        for (int i = 0; i < nThreads * nTimes; i++)
+            array->addChar('A' + omp_get_thread_num(), i);
+    }
+
+    /**
+     * Dynamic with chunk.
+     */
+    void fillDynamicChunk() {
+        printf("\n\nCase: dynamic with chunk\n");
+#pragma omp parallel for schedule(dynamic, nTimes) shared(array) num_threads(nThreads)
+        for (int i = 0; i < nThreads * nTimes; i++)
+            array->addChar('A' + omp_get_thread_num(), i);
+    }
+
+    /**
+     * Dynamic with chunk.
+     */
+    void fillDynamicNoChunk() {
+        printf("\n\nCase: dynamic without chunk\n");
+#pragma omp parallel for schedule(dynamic) shared(array) num_threads(nThreads)
+        for (int i = 0; i < nThreads * nTimes; i++)
+            array->addChar('A' + omp_get_thread_num(), i);
+    }
+
+    /**
+     * Guided with chunk.
+     */
+    void fillGuidedChunk() {
+        printf("\n\nCase: guided with chunk\n");
+#pragma omp parallel for schedule(guided, nTimes) shared(array) num_threads(nThreads)
+        for (int i = 0; i < nThreads * nTimes; i++)
+            array->addChar('A' + omp_get_thread_num(), i);
+    }
+
+    /**
+     * Guided with chunk.
+     */
+    void fillGuidedNoChunk() {
+        printf("\n\nCase: guided without chunk\n");
+#pragma omp parallel for schedule(guided) shared(array) num_threads(nThreads)
+        for (int i = 0; i < nThreads * nTimes; i++)
+            array->addChar('A' + omp_get_thread_num(), i);
+    }
+
+    /**
+     * Case with schedule runtime.
+     */
+    void fillRuntime() {
+        printf("\n\nCase: runtime\n");
+#pragma omp parallel for schedule(runtime) shared(array) num_threads(nThreads)
+        for (int i = 0; i < nThreads * nTimes; i++)
+            array->addChar('A' + omp_get_thread_num(), i);
+    }
+
+    /**
+     * Case with schedule runtime.
+     */
+    void fillAuto() {
+        printf("\n\nCase: auto\n");
+#pragma omp parallel for schedule(auto) shared(array) num_threads(nThreads)
         for (int i = 0; i < nThreads * nTimes; i++)
             array->addChar('A' + omp_get_thread_num(), i);
     }
@@ -76,16 +150,46 @@ public:
         cout << endl;
     }
 
+    void clear() {
+        array = new SharedArray(nThreads * nTimes);
+    }
+
     ~ArrayFiller() {
         delete array;
     }
 };
 
 int main() {
-    cout << "Each thread should add its char to the array n times (n=20)" << endl;
-    cout << "Correct results should total exactly nThreads*nTimes chars" << endl;
-    cout << "Expecting correct results" << endl;
     ArrayFiller m1;
-    m1.fillArrayConcurrently();
+    m1.fillStaticChunk();
     m1.printStats();
+    m1.clear();
+
+    m1.fillStaticNoChunk();
+    m1.printStats();
+    m1.clear();
+
+    m1.fillDynamicChunk();
+    m1.printStats();
+    m1.clear();
+
+    m1.fillDynamicNoChunk();
+    m1.printStats();
+    m1.clear();
+
+    m1.fillGuidedChunk();
+    m1.printStats();
+    m1.clear();
+
+    m1.fillGuidedNoChunk();
+    m1.printStats();
+    m1.clear();
+
+    m1.fillRuntime();
+    m1.printStats();
+    m1.clear();
+
+    m1.fillAuto();
+    m1.printStats();
+    m1.clear();
 }
